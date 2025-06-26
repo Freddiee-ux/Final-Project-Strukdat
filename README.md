@@ -1,5 +1,106 @@
 <h1> Laporan Final Project Struktur Data </h1>
 
+<h2> Generate Data</h2>
+
+```c
+struct KTP {
+    string NIK;
+    string Nama;
+    string TanggalLahir;
+};
+
+const vector<string> maleFirstNames = {
+    "Ahmad", "Budi", "Cahyo", "Dedi", "Eko", "Fajar", "Gunawan", "Hadi", "Irfan", "Joko",
+    "Kurniawan", "Lukman", "Mulyono", "Nugroho", "Oki", "Purnomo", "Rudi", "Surya", "Teguh", "Wahyu"
+};
+
+const vector<string> femaleFirstNames = {
+    "Ani", "Bunga", "Citra", "Dewi", "Eka", "Fitri", "Gita", "Hani", "Intan", "Juli",
+    "Kartika", "Lina", "Maya", "Nur", "Oki", "Putri", "Rini", "Sari", "Tuti", "Wulan"
+};
+
+const vector<string> lastNames = {
+    "Santoso", "Wijaya", "Prabowo", "Hidayat", "Siregar", "Tanuwijaya", "Kusuma", "Setiawan",
+    "Pratama", "Halim", "Susanto", "Wibowo", "Siregar", "Gunawan", "Saputra", "Irawan"
+};
+
+string generateBirthDate(mt19937& gen) {
+    time_t now = time(nullptr);
+    tm currentTime = *localtime(&now);
+    uniform_int_distribution<> ageDist(17, 70);
+    uniform_int_distribution<> dayDist(1, 28);
+    uniform_int_distribution<> monthDist(1, 12);
+
+    int age = ageDist(gen);
+    int day = dayDist(gen);
+    int month = monthDist(gen);
+    int year = currentTime.tm_year + 1900 - age;
+
+    ostringstream oss;
+    oss << setw(2) << setfill('0') << day << "-"
+        << setw(2) << setfill('0') << month << "-"
+        << year;
+
+    return oss.str();
+}
+
+string generateNIKFromDate(const string& birthDate, int count, int provinceCode = 32, int regencyCode = 73) {
+    int day = stoi(birthDate.substr(0, 2));
+    int month = stoi(birthDate.substr(3, 2));
+    int year = stoi(birthDate.substr(6, 4)) % 100;
+
+    ostringstream oss;
+    oss << setw(2) << setfill('0') << provinceCode
+        << setw(2) << setfill('0') << regencyCode
+        << setw(2) << setfill('0') << day
+        << setw(2) << setfill('0') << month
+        << setw(2) << setfill('0') << year
+        << setw(4) << setfill('0') << count;
+
+    return oss.str();
+}
+
+string generateName(mt19937& gen) {
+    uniform_int_distribution<> genderDist(0, 1);
+    bool isMale = genderDist(gen);
+
+    const vector<string>& firstNames = isMale ? maleFirstNames : femaleFirstNames;
+    uniform_int_distribution<size_t> firstNameDist(0, firstNames.size() - 1);
+    uniform_int_distribution<size_t> lastNameDist(0, lastNames.size() - 1);
+
+    string firstName = firstNames[firstNameDist(gen)];
+    string lastName = lastNames[lastNameDist(gen)];
+
+    return firstName + " " + lastName;
+}
+
+vector<KTP> generateKTPData(int amount, int provinceCode, int regencyCode, mt19937& gen) {
+    if (amount > 1000) {
+        amount = 1000;
+        cout << "Warning: Maximum 1000 data per call. Generating 1000 data." << endl;
+    }
+
+    vector<KTP> ktpList;
+    unordered_set<string> usedNIK; 
+    int i = 0;
+    while (ktpList.size() < amount) {
+        KTP data;
+        data.TanggalLahir = generateBirthDate(gen);
+        data.NIK = generateNIKFromDate(data.TanggalLahir, i++, provinceCode, regencyCode);
+
+        if (usedNIK.count(data.NIK) > 0) {
+            continue;
+        }
+
+        data.Nama = generateName(gen);
+        ktpList.push_back(data);
+        usedNIK.insert(data.NIK);
+    }
+
+    return ktpList;
+}
+```
+    
 <h2> B+tree</h2>
 
 ```c

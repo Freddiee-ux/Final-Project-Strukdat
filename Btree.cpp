@@ -1,13 +1,10 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include <sstream>
-#include <iomanip>
-#include <random>
 #include <fstream>
+#include <sstream>
 #include <chrono>
-#include <unordered_set>
-#include <algorithm>
+#include <random>
 using namespace std;
 
 struct KTP {
@@ -16,36 +13,6 @@ struct KTP {
     string TanggalLahir;
 };
 
-// Baca file CSV
-vector<KTP> readKTPDataFromCSV(const string& filename) {
-    vector<KTP> result;
-    ifstream file(filename);
-    if (!file.is_open()) {
-        cerr << "Gagal membuka file " << filename << endl;
-        return result;
-    }
-
-    string line;
-    getline(file, line); // skip header
-
-    while (getline(file, line)) {
-        stringstream ss(line);
-        string idStr, nama, tanggal;
-        if (getline(ss, idStr, ',') && getline(ss, nama, ',') && getline(ss, tanggal)) {
-            try {
-                int id = stoi(idStr);
-                result.push_back({id, nama, tanggal});
-            } catch (...) {
-                cerr << "Format ID tidak valid: " << idStr << endl;
-            }
-        }
-    }
-
-    file.close();
-    return result;
-}
-
-// B+ Tree Node
 struct BPTreeNode {
     bool isLeaf;
     vector<int> keys;
@@ -61,7 +28,6 @@ void splitChild(BPTreeNode* parent, int index, BPTreeNode* child) {
     BPTreeNode* newChild = new BPTreeNode(child->isLeaf);
     newChild->keys.assign(child->keys.begin() + t, child->keys.end());
     newChild->data.assign(child->data.begin() + t, child->data.end());
-
     if (!child->isLeaf) {
         newChild->children.assign(child->children.begin() + t, child->children.end());
     }
@@ -77,7 +43,6 @@ void splitChild(BPTreeNode* parent, int index, BPTreeNode* child) {
 
 void insertNonFull(BPTreeNode* node, const KTP& ktp) {
     int i = node->keys.size() - 1;
-
     if (node->isLeaf) {
         while (i >= 0 && ktp.ID < node->keys[i]) i--;
         node->keys.insert(node->keys.begin() + i + 1, ktp.ID);
@@ -110,7 +75,6 @@ void insert(const KTP& ktp) {
 
 long long searchBPTree(int id, KTP*& found) {
     auto start = chrono::high_resolution_clock::now();
-
     BPTreeNode* current = root;
     while (current != nullptr) {
         int i = 0;
@@ -123,7 +87,6 @@ long long searchBPTree(int id, KTP*& found) {
         if (current->isLeaf) break;
         current = current->children[i];
     }
-
     found = nullptr;
     auto end = chrono::high_resolution_clock::now();
     return chrono::duration_cast<chrono::nanoseconds>(end - start).count();
@@ -140,42 +103,86 @@ long long searchRangeBPTree(BPTreeNode* node, int startID, int endID, vector<KTP
             }
         }
     } else {
-        for (size_t i = 0; i <= node->keys.size(); ++i) {
+        for (size_t i = 0; i < node->keys.size(); ++i) {
+            // Traverse left child
             searchRangeBPTree(node->children[i], startID, endID, result);
+
+            // Check current key
+            if (node->keys[i] >= startID && node->keys[i] <= endID) {
+                result.push_back(node->data[i]);
+            }
         }
+        // Traverse last child
+        searchRangeBPTree(node->children.back(), startID, endID, result);
     }
+
     auto end = chrono::high_resolution_clock::now();
     return chrono::duration_cast<chrono::nanoseconds>(end - start).count();
 }
 
+
+vector<KTP> readKTPData(const string& filename, int limit) {
+    vector<KTP> data;
+    ifstream file(filename);
+    if (!file.is_open()) {
+        cerr << "Gagal membuka file " << filename << endl;
+        return data;
+    }
+    string line;
+    getline(file, line); // skip header
+    while (getline(file, line) && data.size() < limit) {
+        stringstream ss(line);
+        string idStr, nama, tanggal;
+        if (getline(ss, idStr, ',') && getline(ss, nama, ',') && getline(ss, tanggal)) {
+            try {
+                data.push_back({stoi(idStr), nama, tanggal});
+            } catch (...) {
+                cerr << "Format ID tidak valid: " << idStr << endl;
+            }
+        }
+    }
+    return data;
+}
+
 int main() {
-    vector<KTP> data = readKTPDataFromCSV("KTPData.csv");
-    cout << "Sukses membaca " << data.size() << " data KTP dari file KTPData.csv\n";
+    string filename = "KTPData.csv";
+    int jumlahData = 100000;
+    vector<KTP> data = readKTPData(filename, jumlahData);
+    cout << "Sukses membaca " << data.size() << " data dari " << filename << endl;
 
-    createBPTree(3);
+    createBPTree(20);
+
+    // 1. Penyisipan
+    auto startInsert = chrono::high_resolution_clock::now();
     for (const auto& d : data) insert(d);
+    auto endInsert = chrono::high_resolution_clock::now();
+    long long waktuInsert = chrono::duration_cast<chrono::nanoseconds>(endInsert - startInsert).count();
+    cout << "\n1. Waktu penyisipan (B+ Tree): " << waktuInsert << " nanodetik\n";
 
-    // 100 pencarian acak
+    // 2. Pencarian ID tunggal
     random_device rd;
     mt19937 gen(rd());
     uniform_int_distribution<> dist(0, data.size() - 1);
     long long totalTime = 0;
     for (int i = 0; i < 100; ++i) {
-        int randomIndex = dist(gen);
-        int randomID = data[randomIndex].ID;
+        int randomID = data[dist(gen)].ID;
         KTP* found = nullptr;
         totalTime += searchBPTree(randomID, found);
     }
-    cout << "\nRata-rata waktu pencarian 100 ID acak (B+ Tree): " << (totalTime / 100.0) << " nanodetik\n";
+    cout << "2. Rata-rata waktu pencarian 100 ID acak: " << (totalTime / 100.0) << " nanodetik\n";
 
-    // Pencarian rentang ID
-    int startID = 250, endID = 300;
+    // 3. Pencarian rentang ID dari cin
+    int startID, endID;
+    cout << "3. Masukkan rentang ID yang ingin dicari:\n   Start ID: ";
+    cin >> startID;
+    cout << "   End ID: ";
+    cin >> endID;
+
     vector<KTP> hasilRange;
     long long rangeTime = searchRangeBPTree(root, startID, endID, hasilRange);
-    cout << "\nPencarian rentang ID [" << startID << " - " << endID << "]\n";
-    cout << "Jumlah data ditemukan: " << hasilRange.size() << endl;
-    cout << "Waktu pencarian rentang (B+ Tree): " << rangeTime << " nanodetik\n";
-    cout << "Rata-rata waktu per item ditemukan: "
+    cout << "   Waktu pencarian rentang ID [" << startID << " - " << endID << "]: " << rangeTime << " nanodetik\n";
+    cout << "   Jumlah data ditemukan: " << hasilRange.size() << "\n";
+    cout << "   Rata-rata waktu per item ditemukan: "
          << (hasilRange.empty() ? 0 : rangeTime / hasilRange.size()) << " nanodetik\n";
 
     return 0;

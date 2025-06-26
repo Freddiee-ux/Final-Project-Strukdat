@@ -80,7 +80,7 @@ int main(){
     mt19937 gen(rd());
 
     int jumlahData;
-    cout << "Masukkan jumlah data KTP yang ingin dibuat (maks 1000): ";
+    cout << "Masukkan jumlah data KTP yang ingin dibuat: ";
     cin >> jumlahData;
 
     // Generate dan simpan ke file

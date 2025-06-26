@@ -551,3 +551,103 @@ int main() {
     return 0;
 }
 ```
+<h1> Laporan Final Project Struktur Data </h1>
+
+<h2> Generate Data </h2>
+
+Program ini menghasilkan data KTP palsu dengan atribut:
+- `NIK` (Nomor Induk Kependudukan)
+- `Nama`
+- `Tanggal Lahir`
+
+Fungsi utama yang digunakan:
+- `generateBirthDate()` – menghasilkan tanggal lahir acak.
+- `generateNIKFromDate()` – membuat NIK berdasarkan tanggal lahir dan kode wilayah.
+- `generateName()` – memilih nama depan dan belakang secara acak berdasarkan gender.
+- `generateKTPData()` – menghasilkan sejumlah data dan memastikan NIK unik.
+
+---
+
+<h2> B+ Tree </h2>
+
+B+ Tree digunakan untuk menyimpan dan mencari data berdasarkan NIK. Keunggulan struktur ini adalah pencarian **dengan NIK tunggal maupun range NIK**.
+
+Fungsi penting:
+- `createBPTree(degree)` – inisialisasi tree dengan derajat tertentu.
+- `insert(data)` – menyisipkan data baru ke tree.
+- `search(nik)` – mencari data berdasarkan NIK.
+- `searchRangeInBPTree(root, startNIK, endNIK, result)` – mencari data dalam rentang NIK.
+
+B+ Tree cocok digunakan jika:
+- Data perlu tersortir otomatis.
+- Dibutuhkan pencarian dalam range NIK.
+
+---
+
+<h2> Hash Map </h2>
+
+Hash Map (`unordered_map`) digunakan untuk menyimpan data KTP dengan key berupa NIK. Hash Map unggul dalam pencarian data tunggal karena waktu aksesnya rata-rata `O(1)`.
+
+Fungsi penting:
+- `buildKTPHashMap(data)` – membangun hash map dari vector data.
+- `searchNIK(hashMap, nik)` – mencari data berdasarkan NIK dan mencatat waktu pencarian.
+
+Hash Map cocok digunakan jika:
+- Pencarian hanya dilakukan untuk **1 NIK**.
+- Kecepatan akses menjadi prioritas utama.
+
+---
+
+<h2>Perbedaan: B+ Tree vs Hash Map</h2>
+
+| Aspek                         | B+ Tree                                                                 | Hash Map                                                               |
+|------------------------------|-------------------------------------------------------------------------|------------------------------------------------------------------------|
+| **Struktur**                 | Tree terurut dengan data disimpan di leaf node                         | Tabel hash yang menggunakan fungsi hash untuk menyimpan data          |
+| **Kunci Penyimpanan**        | Disimpan secara urut (sorting NIK)                                      | Disimpan acak berdasarkan hasil hash                                  |
+| **Waktu Akses (Average)**    | O(log n) – pencarian berjenjang dari root ke leaf                      | O(1) – akses langsung via key hash                                    |
+| **Waktu Akses (Worst-case)** | Bisa memburuk jika tree tidak seimbang                                 | Bisa memburuk menjadi O(n) saat banyak collision                      |
+| **Pencarian Range**          | Mendukung pencarian rentang NIK (range query)                          | Tidak mendukung secara langsung                                       |
+| **Traversal**                | Mudah: semua leaf terhubung via pointer → efisien untuk iterasi        | Sulit, harus iterasi seluruh bucket                                   |
+| **Kelebihan**                | Terstruktur, mendukung query kompleks, cocok untuk database             | Simpel, sangat cepat untuk pencarian satu data                        |
+| **Kekurangan**               | Lebih kompleks untuk diimplementasikan                                 | Tidak cocok untuk data terurut atau range query                       |
+| **Kebutuhan Memori**         | Lebih hemat untuk penyimpanan terstruktur                              | Dapat boros memori jika ukuran hash table tidak optimal               |
+| **Stabil di Data Besar**     | Ya – struktur tree menjaga performa stabil                             | Perlu tuning kapasitas atau rehashing saat data sangat besar          |
+
+---
+
+<h2>Contoh Penggunaan Nyata</h2>
+
+| Skema Penggunaan                      | B+ Tree                                        | Hash Map                                 |
+|--------------------------------------|------------------------------------------------|------------------------------------------|
+| Cari satu NIK                        | Cukup cepat                                    | Sangat cepat                             |
+| Cari NIK 3273010101900001            | O(log n)                                       | O(1)                                     |
+| Cari rentang NIK                     | Mudah dan efisien (`searchRangeInBPTree`)      | Tidak bisa langsung                      |
+| Ingin data selalu terurut            | Ya, tinggal traversal leaf nodes               | Tidak mendukung urutan                   |
+| Ingin akses cepat dengan memori kecil| Tidak seefisien Hash Map                       | Ya, untuk akses langsung                 |
+| Digunakan dalam database             | Sangat umum (MySQL, PostgreSQL, dll.)          | Jarang, kecuali untuk caching            |
+
+---
+
+<h2>Kesimpulan Teknis</h2>
+
+- Jika **fokus utamanya adalah pencarian 1 data berdasarkan NIK**, dan data < 1000:
+  > Gunakan **Hash Map**
+
+- Jika **perlu pencarian rentang NIK** (misal NIK dari 3273010101900001 sampai 3273010101999999), atau ingin data **tersortir**:
+  > Gunakan **B+ Tree**
+
+- Jika ingin **sistem hybrid yang fleksibel**:
+  > Gunakan keduanya secara bersamaan. Hash Map untuk pencarian cepat tunggal, B+ Tree untuk query kompleks dan range.
+
+---
+
+<h2>🧪 Studi Kasus Singkat</h2>
+
+| Jumlah Data | Cari 1 NIK (Hash Map) | Cari 1 NIK (B+ Tree) | Cari Range NIK (B+ Tree) | Kesimpulan Utama                       |
+|-------------|------------------------|------------------------|---------------------------|----------------------------------------|
+| 10          | ✅ Sangat cepat         | ❌ Lambat karena overhead | ✅ Cepat tapi overkill     | Gunakan Hash Map                       |
+| 100         | ✅ Cepat               | ✅ Cepat                | ✅ B+ Tree unggul           | Pilih sesuai kebutuhan                 |
+| 1000        | ✅ Stabil              | ✅ Stabil               | ✅ Ideal untuk range        | Gunakan keduanya jika memungkinkan     |
+
+---
+

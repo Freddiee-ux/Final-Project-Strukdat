@@ -144,22 +144,86 @@ vector<KTP> readKTPData(const string& filename, int limit) {
     return data;
 }
 
+bool updateData(int id, const string& namaBaru, const string& tglBaru) {
+    KTP* target = nullptr;
+    searchBPTree(id, target);
+    if (target) {
+        target->Nama = namaBaru;
+        target->TanggalLahir = tglBaru;
+        return true;
+    }
+    return false;
+}
+
+bool deleteData(BPTreeNode* node, int id) {
+    if (!node) return false;
+    if (node->isLeaf) {
+        for (int i = 0; i < node->keys.size(); ++i) {
+            if (node->keys[i] == id) {
+                node->keys.erase(node->keys.begin() + i);
+                node->data.erase(node->data.begin() + i);
+                return true;
+            }
+        }
+        return false;
+    } else {
+        for (int i = 0; i < node->keys.size(); ++i) {
+            if (id <= node->keys[i]) {
+                return deleteData(node->children[i], id);
+            }
+        }
+        return deleteData(node->children.back(), id);
+    }
+}
+
+
+void collectAllData(BPTreeNode* node, vector<KTP>& result) {
+    if (!node) return;
+    if (node->isLeaf) {
+        for (auto& ktp : node->data) result.push_back(ktp);
+    } else {
+        for (size_t i = 0; i < node->children.size(); ++i) {
+            collectAllData(node->children[i], result);
+        }
+    }
+}
+
+void saveToCSV(const string& filename, BPTreeNode* root) {
+    vector<KTP> allData;
+    collectAllData(root, allData);
+    ofstream file(filename);
+    file << "ID,Nama,TanggalLahir\n";
+    for (const auto& ktp : allData) {
+        file << ktp.ID << "," << ktp.Nama << "," << ktp.TanggalLahir << "\n";
+    }
+    file.close();
+}
+
+void saveToCSV(const string& filename, const vector<KTP>& data) {
+    ofstream file(filename);
+    file << "ID,Nama,TanggalLahir\n";
+    for (const auto& ktp : data) {
+        file << ktp.ID << "," << ktp.Nama << "," << ktp.TanggalLahir << "\n";
+    }
+}
+
+
 int main() {
     string filename = "KTPData.csv";
     int jumlahData = 100000;
     vector<KTP> data = readKTPData(filename, jumlahData);
-    cout << "Sukses membaca " << data.size() << " data dari " << filename << endl;
+    cout << "\nSukses membaca " << data.size() << " data dari " << filename << endl;
 
     createBPTree(20);
 
-    // 1. Penyisipan
+    // 1. Insert
     auto startInsert = chrono::high_resolution_clock::now();
     for (const auto& d : data) insert(d);
     auto endInsert = chrono::high_resolution_clock::now();
     long long waktuInsert = chrono::duration_cast<chrono::nanoseconds>(endInsert - startInsert).count();
-    cout << "\n1. Waktu penyisipan (B+ Tree): " << waktuInsert << " nanodetik\n";
+    cout << "\n1. Waktu Insertion (B+ Tree): " << waktuInsert << " nanodetik\n";
 
-    // 2. Pencarian ID tunggal
+    // 2. Read
     random_device rd;
     mt19937 gen(rd());
     uniform_int_distribution<> dist(0, data.size() - 1);
@@ -171,7 +235,7 @@ int main() {
     }
     cout << "2. Rata-rata waktu pencarian 100 ID acak: " << (totalTime / 100.0) << " nanodetik\n";
 
-    // 3. Pencarian rentang ID dari cin
+
     int startID, endID;
     cout << "3. Masukkan rentang ID yang ingin dicari:\n   Start ID: ";
     cin >> startID;
@@ -185,5 +249,45 @@ int main() {
     cout << "   Rata-rata waktu per item ditemukan: "
          << (hasilRange.empty() ? 0 : rangeTime / hasilRange.size()) << " nanodetik\n";
 
-    return 0;
+    // 3. Update
+    int updateID;
+    string newName, newDOB;
+    cout << "\n4. Masukkan ID yang ingin diupdate: ";
+    cin >> updateID;
+    cout << "   Masukkan nama baru: ";
+    cin.ignore();
+    getline(cin, newName);
+    cout << "   Masukkan tanggal lahir baru (DD-MM-YY): ";
+    getline(cin, newDOB);
+
+    auto startUpdate = chrono::high_resolution_clock::now();
+    bool updated = updateData(updateID, newName, newDOB);
+    auto endUpdate = chrono::high_resolution_clock::now();
+    long long updateTime = chrono::duration_cast<chrono::nanoseconds>(endUpdate - startUpdate).count();
+
+    if (updated) {
+        saveToCSV(filename, root);
+        cout << "   Data berhasil diupdate dan disimpan ke file.\n";
+        cout << "   Waktu update: " << updateTime << " nanodetik\n";
+    } else {
+        cout << "   ID tidak ditemukan.\n";
+    }
+
+    // 4. Delete
+    int deleteID;
+    cout << "\n5. Masukkan ID yang ingin dihapus: ";
+    cin >> deleteID;
+
+    auto startDelete = chrono::high_resolution_clock::now();
+    bool deleted = deleteData(root, deleteID);
+    auto endDelete = chrono::high_resolution_clock::now();
+    long long deleteTime = chrono::duration_cast<chrono::nanoseconds>(endDelete - startDelete).count();
+
+    if (deleted) {
+        saveToCSV(filename, root);
+        cout << "   Data dengan ID " << deleteID << " berhasil dihapus dan disimpan ke file.\n";
+        cout << "   Waktu delete: " << deleteTime << " nanodetik\n";
+    } else {
+        cout << "   Data dengan ID " << deleteID << " tidak ditemukan.\n";
+    }
 }

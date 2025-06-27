@@ -76,7 +76,7 @@ void saveToCSV(const string& filename, const unordered_map<int, KTP>& map) {
 
 int main() {
     string filename = "KTPData.csv";
-    int jumlahData = 100000;
+    int jumlahData = 1000000;
     vector<KTP> data = readKTPData(filename, jumlahData);
     cout << "\nSukses membaca " << data.size() << " data dari " << filename << endl;
 
@@ -88,15 +88,18 @@ int main() {
     cout << "\n1. Waktu Insertion (Hash Map): " << waktuInsert << " nanodetik\n";
 
     // 2. Read
-    random_device rd;
-    mt19937 gen(rd());
-    uniform_int_distribution<> dist(0, data.size() - 1);
-    long long totalTime = 0;
-    for (int i = 0; i < 100; ++i) {
-        int randomID = data[dist(gen)].ID;
-        totalTime += searchHashMap(map, randomID);
+    int searchID;
+    cout << "2. Masukkan ID yang ingin dicari: ";
+    cin >> searchID;
+    long long searchTime = searchHashMap(map, searchID);
+    auto itSearch = map.find(searchID);
+    if (itSearch != map.end()) {
+        cout << "   Data ditemukan: " << itSearch->second.ID << ", " << itSearch->second.Nama << ", " << itSearch->second.TanggalLahir << endl;
+    } else {
+        cout << "   Data dengan ID " << searchID << " tidak ditemukan.\n";
     }
-    cout << "2. Rata-rata waktu pencarian 100 ID acak: " << (totalTime / 100.0) << " nanodetik\n";
+    cout << "   Waktu pencarian: " << searchTime << " nanodetik\n";
+
 
 
     int startID, endID;

@@ -202,7 +202,7 @@ void saveToCSV(const string& filename, BPTreeNode* root) {
 
 int main() {
     string filename = "KTPData.csv";
-    int jumlahData = 100000;
+    int jumlahData = 1000000;
     vector<KTP> data = readKTPData(filename, jumlahData);
     cout << "\nSukses membaca " << data.size() << " data dari " << filename << endl;
 
@@ -216,16 +216,19 @@ int main() {
     cout << "\n1. Waktu Insertion (B+ Tree): " << waktuInsert << " nanodetik\n";
 
     // 2. Read
-    random_device rd;
-    mt19937 gen(rd());
-    uniform_int_distribution<> dist(0, data.size() - 1);
-    long long totalTime = 0;
-    for (int i = 0; i < 100; ++i) {
-        int randomID = data[dist(gen)].ID;
-        KTP* found = nullptr;
-        totalTime += searchBPTree(randomID, found);
-    }
-    cout << "2. Rata-rata waktu pencarian 100 ID acak: " << (totalTime / 100.0) << " nanodetik\n";
+    int searchID;
+    cout << "2. Masukkan ID yang ingin dicari: ";
+    cin >> searchID;
+
+    KTP* found = nullptr;
+    long long searchTime = searchBPTree(searchID, found);
+
+    if (found) {
+        cout << "   Data ditemukan: " << found->ID << ", " << found->Nama << ", " << found->TanggalLahir << endl;
+    } else {
+        cout << "   Data dengan ID " << searchID << " tidak ditemukan.\n";
+    }   
+    cout << "   Waktu pencarian: " << searchTime << " nanodetik\n";
 
 
     int startID, endID;

@@ -199,14 +199,6 @@ void saveToCSV(const string& filename, BPTreeNode* root) {
     file.close();
 }
 
-void saveToCSV(const string& filename, const vector<KTP>& data) {
-    ofstream file(filename);
-    file << "ID,Nama,TanggalLahir\n";
-    for (const auto& ktp : data) {
-        file << ktp.ID << "," << ktp.Nama << "," << ktp.TanggalLahir << "\n";
-    }
-}
-
 
 int main() {
     string filename = "KTPData.csv";
